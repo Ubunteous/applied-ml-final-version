@@ -17,6 +17,7 @@
 #+latex_header: \definecolor{frenchplum}{RGB}{129,20,83}
 #+latex_header: \definecolor{soft_red}{RGB}{179,20,20}
 #+latex_header: \lstset{language=Python, frame=tb, tabsize=4, showstringspaces=false, numbers=left, commentstyle=\color{commentgreen}, keywordstyle=\color{eminence}, stringstyle=\color{red}, basicstyle=\small\ttfamily, emph={if,elif,else,def,class}, emphstyle={\color{soft_red}}, escapechar=\&, classoffset=1, otherkeywords={>,<,.,;,-,!,=,~}, morekeywords={>,<,.,;,-,!,=,~}, keywordstyle=\color{weborange}, classoffset=0}
+#+OPTIONS: ^:nil
 
 * Abstract
 
@@ -24,11 +25,11 @@ Artificial Intelligence is evolving faster than ever. One domain in particular, 
 
 It is now time to develop our own tool built on these discoveries. Its purpose is to tackle challenges in the face recognition area by analysing multiple features of the human face such as its shape, eyes and mouth which are essential to identify individuals and their emotions.
 
-To reach this objective, we rely on an important source of annotated data in the form of pictures of celebrities and cartoonish characters.
+To reach this objective, we rely on annotated data in the form of pictures of celebrities and cartoonish characters.
 
-The information from these datasets are then extracted and cleaned before being trained by various algorithms such as Support Vector Machine and Neural Networks which imitate the way human learn in order to make the algorithm able to differentiate individuals.
+The information from these datasets are then extracted and cleaned before being trained by various algorithms such as Support Vector Machine, Random Forests, K-nearest neighbour or bagging. The first two represent good alternatives to more complex algorithms such as neural networks and deep learning which imitate the way human learn in order to make the algorithm able to differentiate individuals.
 
-Results are obtained by testing the trained algorithm against a subset of the dataset left aside for this specific purpose.
+Results are obtained by testing more than 20 variations of models against a subset of the dataset left aside for this specific purpose.
 
 Upon completion of this project, it should be possible to take these proofs of concepts and embed them in more complex systems such as smart cameras and robots which are the most common kind of devices which may benefit from an improved perception.
 
@@ -62,111 +63,207 @@ These problems can generally be also explained by biased datasets which contain 
 
 It is therefore essential to handle data preprocessing with as much care as the analysis itself as we will see in the next sections. 
 
-* Models Description (chart, fig, eq explain/justify)
-# ** Task A1 ** Task A2 ** Task B1 ** Task B2
+* Models Description
+
+CNN are considered as the most efficient model overall out of the one we studied. Which is why we should not rely on them in this report as it is more interesting to not know how a model fares. We will therefore study other popular models including SVMs, Bagging, KNN (K nearest neighbours) and Random Forests and determine which is the best among them for each task.
+
 ** Support Vector Machines
 
-With a linear SVM, we seek w and b such that $\rho = \frac{2}{\|w\|}$ is maximised and for all $(x_i, y_i), i = 1...n: y_i(w^T x_i + b) \geq 1$.
+#+begin_center
+#+CAPTION: SVM algorithm
+[[file:./images/svm.png]]
+#+end_center
 
-The quadratic operation problem can therefore be reformulated as finding w and b such that: $\phi(w) = w^Tw$ is minimised for the aforementioned values of $x$ and $y$.
+The first model, SVM, is very robust for both classification and regression in supervised learning tasks. Their purpose is to find a hyperplane that best divides a dataset into two classes.
 
-With that in mind, we just need to solve a dual problem with a Lagrange multiplier $\alpha_i$ with
-$w = \sum \alpha_i y_i x_i$ and $b = y_k - \sum \alpha_i y_i x_i^Tx_k$ for any $a_k > 0$. It can be summarised as $f(x) = \sum \alpha_i y_i x_i^Tx + b$ with every non-zero $a_i$ indicating the presence of a support vector in the form of $x_i$.
+For instance, with a linear SVM, we seek w and b such that $\rho = \frac{2}{\|w\|}$ is maximised and for all $(x_i, y_i), i = 1...n: y_i(w^T x_i + b) \geq 1$.
 
-# See https://towardsdatascience.com/https-medium-com-pupalerushikesh-svm-f4b42800e989
+This leads to a quadratic problem where we want $\phi(w) = w^Tw$ minimised for the aforementioned values of $x$ and $y$.
+
+The solution is a dual problem with a Lagrange multiplier $\alpha_i$ summarised as $f(x) = \sum \alpha_i y_i x_i^Tx + b$ with every non-zero $a_i$ indicating the presence of a support vector in the form of $x_i$.
+
+One of the most important benefits of SVM is their ability work both on linear and multiclass problems with a kernel which can be fine tuned to deal with a specific problem. Most of the time, a standard Polynomial or RBF kernel for multi class problems.
+
+** Random Forest
+
+#+begin_center
+#+CAPTION: Random forest algorithm
+[[file:./images/forest.png]]
+#+end_center
+
+Another model are decision trees which consist in putting if conditions in cascade to find a solution. It relies on the theory of entropy $H(x) = - \sum_{x \in S_x} p_x(x) log p_x (x)$ which is a measure of disorder obtained when many parameters shape a solution.
+
+But random trees tend to converge slowly which is why fancier alternatives such as bagging or random forests are used. In the case of Random Forests, a number of decision trees is created based on bootstrapped training samples.
+
+Each time a split in a tree is considered, a random sample of $q$ attributes is chosen as split candidates from the full set of $p$ attributes as its optimal value is data dependant. The branches are averaged at the end.
 
 ** Bagging
+
+When decision trees fail because of overfitting, we can instead rely on ensemble methods such as bagging which can help by decreasing variance of the base model without influencing bias at the cost of a loss of simple structures in comparison to the original model.
+
+In the case of bagging, we pick a base learning model and apply it over many samples. Classification is done by majority vote and also uses a training set consisting of many examples for various models used to get an aggregate overall model.
+
 ** KNN
-** Random Forest
-* Implementation (Details. Explain key modules in code)
-** Task A1
-** Task A2
-** Task B1
-** Task B2
-\pagebreak
+
+#+begin_center
+#+CAPTION: KNN algorithm
+[[file:./images/knn.png]]
+#+end_center
+
+Finally, K-nearest neighbour algorithms rely on the entire training set. It relies on a metric $\rho$ that returns a distance between two points such as the Euclidean distance $\sqrt{\sum_{k=1}^d_{}^{} (x_k - x_k')^2}$ . It is relatively simple and will always converge at the expense of performance since it needs to solve a very expensive distance problem.
+
+* Implementation
+
+Because of the decision taken to compare 4 famous models, the code displays a decoupled nature so that every task can call any model. This leads to a very simple main file similar to the simplified version shown below:
+
+#+begin_src python
+task = task_class.task
+various_data = task.main_properties
+
+X, y = extract_features_labels(...)
+models, results = multi_train_test(...)
+plot_data(...)
+#+end_src
+
+Every task class hold information essential to find the dataset associated to it. With them, it is possible to start extracting features by taking each image from the appropriate dataset directory, detecting its landmarks by greying the image and using 68 data points from a predictor.
+
+Also, if a binary model is used with values equal to -1 or 1, it is essential to normalise them to 0 or 1 in prevision of the training which relies on positive data to avoid bias.
+
+#+begin_src python
+def extract_features_labels(...):
+    ...
+    for imgage_index ...:
+        img = image.img_to_array(...)
+
+    features, _ = run_dlib_shape(img)
+
+    if req_label in ["gender", "smile"]: 
+        lbl = (np.array(all_labels) + 1)/2
+#+end_src
+
+The next part of the code is the split_train_test() function which is used to save cpu cycles. Since my laptop is quite slow, testing models with 10000 images in a short amount of time is not reasonable.
+
+Because of that, the training data is cut in two parts for training and testing. This also removes the need to rely on a second dataset for testing. By default, a split of 75% or 80% of training and the rest for testing has yielded good results.
+
+#+begin_src python
+def split_train_test(X, y, prop_train):
+    ...
+    return tr_X, tr_Y, te_X, te_Y ...
+#+end_src
+
+With the split obtained, training can start. This is the most important part of the code. It is a function which can make predictions with any classifier provided.
+
+#+begin_src python
+def general_classifier(img,lb,clf)    
+    classifier.fit(training data)
+    pred = classifier.predict(test)
+    return accuracy_score(...)
+#+end_src
+
+It really shines when combined with a function called multi_train_test() which calls a random forest, KNN and bagging 9 times with parameters ranging from 1 to 9 and the 4 most common SVM kernels (linear, polynomial, rbf and sigmoid).
+
+This way we obtain 23 models which are then compared so that only the best of each category remain to be plotted which allows us to determine easily how well they perform for each task.
+
 * Experimental Results and Analysis
 ** Task A1
+
+#+begin_center
+#+CAPTION: Task A1: gender (5000 images)
+[[file:./images/A1: gender.png]]
+#+end_center
+
+| Model         | Accuracy |
+|---------------+----------|
+| Bagging (n=9) |   0.5975 |
+| KNN (n=5)     |      0.7 |
+| Random Forest |   0.8275 |
+| SVM (poly)    |    0.914 |
+
+For task 1, most models performed reasonably well as the worst one obtained barely less than 60% of accuracy. SVM obtained the best results which is withing expectation as it is the main alternative to CNN in term of efficiency. The only unusual point worth noting is that the poly kernel ended up being the most efficient which is surprising as the linear kernel is tailored for binary classifiers.
+
 ** Task A2
+
+#+begin_center
+#+CAPTION: Task A2: emotion (5000 images)
+[[file:./images/A2: smiling.png]]
+#+end_center
+
+| Model         | Accuracy |
+|---------------+----------|
+| Bagging (n=9) |    0.824 |
+| KNN (n=7)     |    0.856 |
+| Random Forest |    0.878 |
+| SVM (poly)    |    0.894 |
+
+This task is the one with the best overall results probably related to the fact that smiles tend to be easier to recognise vector wise than gender as they correspond to a curve which is easy to represent mathematically. Because of this, there is not much difference between the predictions from all models which are all in the 80% of success range. 
+
+\pagebreak
 ** Task B1
+
+#+begin_center
+#+CAPTION: Task B1: Shape (5000 images)
+[[file:./images/B1: face_shape.png]]
+#+end_center
+
+| Model         | Accuracy |
+|---------------+----------|
+| Bagging (n=1) |    0.321 |
+| KNN (n=8)     |    0.487 |
+| Random Forest |    0.672 |
+| SVM (poly)    |    0.736 |
+
+With the halved training dataset due to my computer's limitations and the addition of more possible values, most models performed noticeably less well. As per usual, the SVM with polynomial kernel got some good result and the random forest came as a close second as it is technically a more refined version of trees / bagging and does not suffer from the KNN limitation which overall needs even more data to compensate the difficulty to obtain distances with the possible values multiplied by a factor 2.5 in comparison to task A.
+
 ** Task B2
 
 \pagebreak
 
-* Improvements (analysis)
 
-The aforementioned algorithms used for the binary and multiclasses tasks have varying degrees of success.
+#+begin_center
+#+CAPTION: Task B2: Eyes color (5000 images)
+[[file:./images/B2: eye_color.png]]
+#+end_center
 
-Preprocessing was crucial to avoid noise and underfitting with some algorithms which would have lowered their success below the acceptable threshold.
+| Model         | Accuracy |
+|---------------+----------|
+| Bagging (n=9) |    0.284 |
+| KNN (n=9)     |    0.289 |
+| Random Forest |    0.342 |
+| SVM (poly)    |    0.376 |
 
-** Support Vector Machines
+Finally, this task was the most arduous for all models. Identifying eye colour on a grey scaled image is relatively hard even for a human and this is where getting more powerful models such as a CNN really makes a difference. One important point to add is that many characters from the cartoon dataset wear sunglasses which absolutely biases the result by adding unusable data.
 
-Regarding Support Vector Machines, the algorithm performed relatively well with task A but could have been improved with a few tricks.
+** Improvements
 
-+ A better processing for instance entailing standardising inputs properly would be beneficial.
-+ The same is true about trying different kernels such as the RBF one which perform very well in many situations or even kernels tailored specifically for the task at hand.
-+ Additionally, fine tuning with weight alteration and modification of the cost function always remains an option as long as it does not lead to overfitting by making the result mostly correlated to a subset of the training data
+From these results, we can infer that Random Forests and SVM perform better than the two other models which are either less refined in the case of bagging or simply too dependant on wide datasets with few possible values for KNN.
 
-** Convolutional Neural Network
+In order to get better results, more preprocessing would have been necessary for the cartoon dataset which ended up being harder to analyse for all models.
 
-In order to get better results with a CNN, it may be useful to try out the following ideas:
+Regarding Support Vector Machines, the algorithm performed relatively well for every task as it constantly emerged on top. For further tests, it would be better to keep it and try to conceive a custom kernel for task B2 on which it did not perform well.
 
-+ Try out pre-trained models from the EfficientNet-B which are declined in 8 different versions (from 0 to 7) with incrementally more parameters and a common interface making them easily swappable for quick testing sessions.
-+ K-fold validation may be particularly useful with various models such as the ones mentioned previously. This strategy relies on splitting the dataset in K groups before selecting all but one for training and using for every iteration a different one for validation, hence getting more consistent results. Note that this represents an example of ensemble learning, a strategy consisting in mixing multiple domains in various ways.
-  
-# See https://towardsdatascience.com/increase-the-accuracy-of-your-cnn-by-following-these-5-tips-i-learned-from-the-kaggle-community-27227ad39554
+Additionally, fine tuning with weight alteration and modification of the cost function always remains an option for SVM as long as it does not lead to overfitting by making the result mostly correlated to a subset of the training data
+
+And if it does not suffice, switching to neural networks or deep learning remains a valid option.
 
 * Conclusion
 
-Hence Support Vector Machines and Convolutional Neural Networks are algorithms revered for their high efficiency which was highlighted in those binary and multiclasses tasks related to face recognition.
+Hence, if really paid off to try multiple algorithms as out of all the algorithms tested, Support Vector Machines emerged as the most reliable in term of performance and flexibility with their polynomial or custom kernel.
 
-It was essential to pre-process the data with ...
-\\
-\\
+Random forests come as a close second while the other models do not perform well enough to represent an alternative to a neural network.
 
-SVMs operate ... and really shine ...
-\\
-\\
-
-On the other hand, CNN ... but are just as efficient ...
-\\
-\\
-
-We may try next time to mix strategies with different strategies such as K-means clustering which is extremely slow and therefore inefficient but which has the advantage of converging with absolute certitude.
+We may try next time to mix different strategies such as K-means clustering which is extremely slow and therefore inefficient but which has the advantage of converging with absolute certitude.
 
 Moreover, a more promising alternative would be to try more Deep Learning strategies which imitate the way human learn and work particularly well in tandem with neural networks.
 
 Thankfully, the results gathered from the present research should pave the way to better softwares combining them with other strategies such as reinforcement learning in robots and self driving car which could therefore both recognise humans and learn how to drive around them.
 
-# M-S-<arrow> to insert in any direction
-# M-Return to insert a row 
-|---+---+---|
-|   |   |   |
-|---+---+---|
-|   |   |   |
-|---+---+---|
-
 \pagebreak
-
-#+CAPTION: Caption
-[[file:./images/Roberts_building.jpg]]
-
-#+begin_src python
-# test
-if True == 1 + 1:
-    pass
-
-def test
-
-class x
-#+end_src
 
 # run biber filename and pdflatex filename.tex
-\vfill \pagebreak \printbibliography
+\vfill \pagebreak \printbibliography \vfill\null
+\pagebreak \vfill\null \pagebreak
 
-
-\pagebreak
-
-* Appendix
+* Appendix (github link and code output)
 
 This is the output obtained when running the four tasks with 5000 images.
 
@@ -221,3 +318,9 @@ This is the output obtained when running the four tasks with 5000 images.
 : Random Forest 0.34151128557409227
 : SVM (poly) 0.3758586849852797
 #+end_src
+
+\pagebreak \vfill\null \pagebreak
+
+** Github Link
+
+Github: https://github.com/Ubunteous/applied-ml-final-version
