@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def plot_data(x, y, precision="", plot_bests_only=False, print_results=False, save=False):
+    # plot and the data and optionaly, keep the 4 bests models before saving plots as images
+
     if plot_bests_only:
         best_bagging = np.argmax(y[0:9])
         best_knn = np.argmax(y[9:18])

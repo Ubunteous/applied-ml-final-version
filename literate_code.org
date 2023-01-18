@@ -30,6 +30,11 @@ from B2.Task_B2 import B2
 ** Get features from class
 
 #+begin_src jupyter-python :tangle main.py
+# For each task
+# + retrieve useful data
+# + extract features
+# + plot best models
+
 for task_class in [A1, A2, B1, B2]:
     task = task_class.task
     label, max_data, data_dir, proportion_train = task_class().get_main_properties()
@@ -90,6 +95,8 @@ for task_class in [A1, A2, B1, B2]:
 from pathlib import Path
 
 def get_data_dir(name, debug = False):
+    # utility to retrieve a dir containing datasets
+    
     # the file is called from repository/tools/
     cwd = Path(__file__).resolve().parents[1]
 
@@ -209,12 +216,7 @@ def run_dlib_shape(image):
 ** extract_feature_labels
 
 #+begin_src jupyter-python :tangle tools/landmarks.py
-def extract_features_labels(data_dir, req_label, max_data):
-    # inputs: folder and label, split between nb of training inputs and tests inputs starting from 0
-
-    # landmark / points to return
-    # outputs: landmarks and labels
-    
+def extract_features_labels(data_dir, req_label, max_data):    
     """
     This funtion extracts the landmarks features for all
     images in the appropriate folder.
@@ -292,6 +294,7 @@ from sklearn.metrics import accuracy_score
 
 #+begin_src jupyter-python :tangle tools/training.py
 def split_train_test(X, y, proportion_train):
+    # take a set of data and split it between training data and testing data
     # proportion_train is a value between 0.1 and 1
     # determines the proportion of data used for training. the remaining data is kept for testing
     
@@ -314,6 +317,8 @@ def split_train_test(X, y, proportion_train):
 
 #+begin_src jupyter-python :tangle tools/training.py
 def general_classifier(training_images, training_labels, test_images, test_labels, classifier):
+    # utility to make predictions with any classifier with a compatible format
+    
     classifier.fit(training_images, training_labels)
 
     pred = classifier.predict(test_images)
@@ -365,6 +370,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def plot_data(x, y, precision="", plot_bests_only=False, print_results=False, save=False):
+    # plot and the data and optionaly, keep the 4 bests models before saving plots as images
+
     if plot_bests_only:
         best_bagging = np.argmax(y[0:9])
         best_knn = np.argmax(y[9:18])
@@ -411,11 +418,12 @@ from dataclasses import dataclass
 class A1():
     data_dir = "celeba"
     label = "gender"
-    max_data = 50
+    max_data = 1000
     proportion_train = 0.75
     task = "A1"
     
     def get_data_dir(self, debug = False):
+        # get the directory containing the corresponding dataset for this task
         name = self.data_dir
         
         # the file is called from repository / Ax/ or Bx/
@@ -454,11 +462,12 @@ from dataclasses import dataclass
 class A2():
     data_dir = "celeba"
     label = "smiling"
-    max_data = 50
+    max_data = 1000
     proportion_train = 0.75
     task = "A2"
 
     def get_data_dir(self, debug = False):
+        # get the directory containing the corresponding dataset for this task
         name = self.data_dir
         
         # the file is called from repository / Ax/ or Bx/
@@ -497,11 +506,12 @@ from dataclasses import dataclass
 class B1():
     data_dir = "cartoon_set"
     label = "face_shape"
-    max_data = 50
+    max_data = 1000
     proportion_train = 0.75
     task = "B1"
     
     def get_data_dir(self, debug = False):
+        # get the directory containing the corresponding dataset for this task
         name = self.data_dir
         
         # the file is called from repository / Ax/ or Bx/
@@ -540,11 +550,12 @@ from dataclasses import dataclass
 class B2():
     data_dir = "cartoon_set"
     label = "eye_color"
-    max_data = 50
+    max_data = 1000
     proportion_train = 0.75
     task = "B2"
     
     def get_data_dir(self, debug = False):
+        # get the directory containing the corresponding dataset for this task
         name = self.data_dir
         
         # the file is called from repository / Ax/ or Bx/

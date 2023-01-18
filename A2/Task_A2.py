@@ -9,11 +9,12 @@ from dataclasses import dataclass
 class A2():
     data_dir = "celeba"
     label = "smiling"
-    max_data = 50
+    max_data = 1000
     proportion_train = 0.75
     task = "A2"
 
     def get_data_dir(self, debug = False):
+        # get the directory containing the corresponding dataset for this task
         name = self.data_dir
         
         # the file is called from repository / Ax/ or Bx/

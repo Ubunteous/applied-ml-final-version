@@ -1,6 +1,8 @@
 from pathlib import Path
 
 def get_data_dir(name, debug = False):
+    # utility to retrieve a dir containing datasets
+    
     # the file is called from repository/tools/
     cwd = Path(__file__).resolve().parents[1]
 

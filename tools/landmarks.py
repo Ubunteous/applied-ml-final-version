@@ -78,12 +78,7 @@ def run_dlib_shape(image):
 
     return dlibout, resized_image
 
-def extract_features_labels(data_dir, req_label, max_data):
-    # inputs: folder and label, split between nb of training inputs and tests inputs starting from 0
-
-    # landmark / points to return
-    # outputs: landmarks and labels
-    
+def extract_features_labels(data_dir, req_label, max_data):    
     """
     This funtion extracts the landmarks features for all
     images in the appropriate folder.

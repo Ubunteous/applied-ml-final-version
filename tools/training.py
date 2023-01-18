@@ -5,6 +5,7 @@ from sklearn.ensemble import RandomForestClassifier, BaggingClassifier
 from sklearn.metrics import accuracy_score
 
 def split_train_test(X, y, proportion_train):
+    # take a set of data and split it between training data and testing data
     # proportion_train is a value between 0.1 and 1
     # determines the proportion of data used for training. the remaining data is kept for testing
     
@@ -23,6 +24,8 @@ def split_train_test(X, y, proportion_train):
     return tr_X, tr_Y, te_X, te_Y, nb_train, nb_test
 
 def general_classifier(training_images, training_labels, test_images, test_labels, classifier):
+    # utility to make predictions with any classifier with a compatible format
+    
     classifier.fit(training_images, training_labels)
 
     pred = classifier.predict(test_images)
