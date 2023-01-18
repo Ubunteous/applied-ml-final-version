@@ -9,7 +9,7 @@ from dataclasses import dataclass
 class A2():
     data_dir = "celeba"
     label = "smiling"
-    max_data = 5000
+    max_data = 50
     proportion_train = 0.75
     task = "A2"
 

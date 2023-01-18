@@ -10,7 +10,11 @@ The classes containing data specific to each task are located in A1, A2, B1 and 
 
 Besides that, utilities required to recognise faces, analyse them and plot results are located in tool/
 
-If you wish to run this tool, clone it and run main.py
+If you wish to run this tool:
++ clone it
++ add the following file in the same directory as this readme: shape_predictor_68_face_landmarks.dat
+  + Note: this file is available on moodle in the section about the last two labs
++ run main.py from the terminal
 
 ** Packages required to run your code
 

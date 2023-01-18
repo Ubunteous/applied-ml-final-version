@@ -19,3 +19,4 @@ Datasets/cartoon_set_test
 
 # python
 *.pyc
+shape_predictor_68_face_landmarks.dat

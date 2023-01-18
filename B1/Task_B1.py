@@ -9,7 +9,7 @@ from dataclasses import dataclass
 class B1():
     data_dir = "cartoon_set"
     label = "face_shape"
-    max_data = 5000
+    max_data = 50
     proportion_train = 0.75
     task = "B1"
     
