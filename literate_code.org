@@ -1,0 +1,570 @@
+#+title: literate_code
+#+STARTUP: content
+#+PROPERTY: header-args:jupyter-python :session py :async yes
+# overview vs content
+
+* Main
+
+** Import
+
+#+begin_src jupyter-python :tangle main.py
+from tools.landmarks import extract_features_labels
+from tools.training import split_train_test, general_classifier, multi_train_test
+from tools.plot import plot_data
+
+from A1.Task_A1 import A1
+from A2.Task_A2 import A2
+from B1.Task_B1 import B1
+from B2.Task_B2 import B2
+#+end_src
+
+#+RESULTS:
+: 2023-01-18 20:36:23.356796: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+: To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+: 2023-01-18 20:36:23.462178: W tensorflow/compiler/xla/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
+: 2023-01-18 20:36:23.462204: I tensorflow/compiler/xla/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
+: 2023-01-18 20:36:23.932553: W tensorflow/compiler/xla/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libnvinfer.so.7'; dlerror: libnvinfer.so.7: cannot open shared object file: No such file or directory
+: 2023-01-18 20:36:23.932599: W tensorflow/compiler/xla/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libnvinfer_plugin.so.7'; dlerror: libnvinfer_plugin.so.7: cannot open shared object file: No such file or directory
+: 2023-01-18 20:36:23.932603: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Cannot dlopen some TensorRT libraries. If you would like to use Nvidia GPU with TensorRT, please make sure the missing libraries mentioned above are installed properly.
+
+** Get features from class
+
+#+begin_src jupyter-python :tangle main.py
+for task_class in [A1, A2, B1, B2]:
+    task = task_class.task
+    label, max_data, data_dir, proportion_train = task_class().get_main_properties()
+
+    print(f"Working on task {task} with label {label} from dataset {data_dir.name}\nProceeding to get {max_data} images including {proportion_train}% for training\n")
+
+    X, y = extract_features_labels(data_dir, req_label=label, max_data=max_data)
+
+    sorted_models, results = multi_train_test( *split_train_test(X, y, proportion_train = proportion_train) )
+
+    plot_data(sorted_models, results, precision=task + ": "+ label, plot_bests_only=True, print_results=True, save=True)
+#+end_src
+
+#+RESULTS:
+:RESULTS:
+: Working on task A1 with label gender from dataset celeba
+: Proceeding to get 5000 images including 0.75% for training
+: 
+: 100% 5000/5000 [01:57<00:00, 42.63it/s]
+: Bagging (n=9) 0.5975
+: KNN (n=5) 0.7
+: Random Forest 0.8275
+: SVM (poly) 0.9141666666666667
+[[file:./.ob-jupyter/54a300461a58ce3d13fbcafa35808e3c35c47aa8.png]]
+: Working on task A2 with label smiling from dataset celeba
+: Proceeding to get 5000 images including 0.75% for training
+: 
+: 100% 5000/5000 [01:57<00:00, 42.66it/s]
+: Bagging (n=9) 0.8241666666666667
+: KNN (n=7) 0.8558333333333333
+: Random Forest 0.8783333333333333
+: SVM (poly) 0.8941666666666667
+[[file:./.ob-jupyter/6a580322b85af8c88106ce6cfad97ec8f6e50348.png]]
+: Working on task B1 with label face_shape from dataset cartoon_set
+: Proceeding to get 5000 images including 0.75% for training
+: 
+: 100% 5000/5000 [08:58<00:00,  9.29it/s]
+: Bagging (n=1) 0.3209028459273798
+: KNN (n=8) 0.4867517173699706
+: Random Forest 0.6722276741903828
+: SVM (poly) 0.7360157016683022
+[[file:./.ob-jupyter/edab4adfe4ac510d0ffb2a904fa5be3cd08ac85c.png]]
+: Working on task B2 with label eye_color from dataset cartoon_set
+: Proceeding to get 5000 images including 0.75% for training
+: 
+: 100% 5000/5000 [08:59<00:00,  9.27it/s]
+: Bagging (n=9) 0.28361138370951916
+: KNN (n=9) 0.28949950932286556
+: Random Forest 0.34151128557409227
+: SVM (poly) 0.3758586849852797
+[[file:./.ob-jupyter/068e07676ce5484cf9ad092bb71ead77f351da95.png]]
+:END:
+
+* Load Datasets
+** get_data_dir
+
+#+begin_src jupyter-python :tangle tools/load_data.py
+from pathlib import Path
+
+def get_data_dir(name, debug = False):
+    # the file is called from repository/tools/
+    cwd = Path(__file__).resolve().parents[1]
+
+    # Options: celeba, cartoon_set and *_test
+    # Each contains img/*.jpg and labels.csv
+    basedir = cwd / "Datasets"
+    # "celeba" or "cartoon_set" _test
+    images_dir = basedir / name
+
+    if debug:
+        print("Image dir:", images_dir)
+
+    if images_dir.exists() == False:
+        print(f"Directory {images_dir.name} does not exist. Make sure your current directory is applied-ml-final-version")
+        return None
+    
+    return images_dir
+#+end_src
+
+* Extract Features
+** imports
+
+#+begin_src jupyter-python :tangle tools/landmarks.py
+import numpy as np
+# from keras.preprocessing import image # outdated
+import keras.utils as image
+import cv2
+import dlib
+
+import pandas as pd
+# import csv, os
+# from tools.landmarks import run_dlib_shape
+# from tools.load_data import get_data_dir
+from .load_data import get_data_dir
+from tqdm import tqdm
+from pathlib import Path
+
+cwd = Path(__file__).resolve()
+
+detector = dlib.get_frontal_face_detector()
+predictor = dlib.shape_predictor(str(cwd.parents[1] / "shape_predictor_68_face_landmarks.dat"))    
+#+end_src
+
+** shape_to_np
+
+#+begin_src jupyter-python :tangle tools/landmarks.py
+def shape_to_np(shape, dtype="int"):
+    # initialize the list of (x, y)-coordinates
+    coords = np.zeros((shape.num_parts, 2), dtype=dtype)
+
+    # loop over all facial landmarks and convert them
+    # to a 2-tuple of (x, y)-coordinates
+    for i in range(0, shape.num_parts):
+        coords[i] = (shape.part(i).x, shape.part(i).y)
+
+    # return the list of (x, y)-coordinates
+    return coords
+#+end_src
+
+** rect_to_bb
+
+#+begin_src jupyter-python :tangle tools/landmarks.py
+def rect_to_bb(rect):
+    # take a bounding predicted by dlib and convert it
+    # to the format (x, y, w, h) as we would normally do
+    # with OpenCV
+    x = rect.left()
+    y = rect.top()
+    w = rect.right() - x
+    h = rect.bottom() - y
+
+    # return a tuple of (x, y, w, h)
+    return (x, y, w, h)
+#+end_src
+
+** run_dlib_shape
+
+#+begin_src jupyter-python :tangle tools/landmarks.py
+def run_dlib_shape(image):
+    # in this function we load the image, detect the landmarks of the face, and then return the image and the landmarks
+    # load the input image, resize it, and convert it to grayscale
+    resized_image = image.astype('uint8')
+
+    gray = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
+    gray = gray.astype('uint8')
+
+    # detect faces in the grayscale image
+    rects = detector(gray, 1)
+    num_faces = len(rects)
+
+    if num_faces == 0:
+        return None, resized_image
+
+    face_areas = np.zeros((1, num_faces))
+    face_shapes = np.zeros((136, num_faces), dtype=np.int64)
+
+    # loop over the face detections
+    for (i, rect) in enumerate(rects):
+        # determine the facial landmarks for the face region, then
+        # convert the facial landmark (x, y)-coordinates to a NumPy
+        # array
+        temp_shape = predictor(gray, rect)
+        temp_shape = shape_to_np(temp_shape)
+
+        # convert dlib's rectangle to a OpenCV-style bounding box
+        # [i.e., (x, y, w, h)],
+        #   (x, y, w, h) = face_utils.rect_to_bb(rect)
+        (x, y, w, h) = rect_to_bb(rect)
+        face_shapes[:, i] = np.reshape(temp_shape, [136])
+        face_areas[0, i] = w * h
+    # find largest face and keep
+    dlibout = np.reshape(np.transpose(face_shapes[:, np.argmax(face_areas)]), [68, 2])
+
+    return dlibout, resized_image
+#+end_src
+
+** extract_feature_labels
+
+#+begin_src jupyter-python :tangle tools/landmarks.py
+def extract_features_labels(data_dir, req_label, max_data):
+    # inputs: folder and label, split between nb of training inputs and tests inputs starting from 0
+
+    # landmark / points to return
+    # outputs: landmarks and labels
+    
+    """
+    This funtion extracts the landmarks features for all
+    images in the appropriate folder.
+    :return:
+    landmark_features:  an array containing 0-68 landmark
+    points for each image in which a face was detected
+    label: an array containing a label for each image in
+    which a face was detected
+    """
+
+    # place labels.csv in a dataframe
+    images_dir = data_dir / "img"
+    df = pd.read_csv(data_dir / "labels.csv", sep="\t")
+
+    # get appropriate label and image indexes
+    genders = df[req_label]
+    df.rename(columns={'Unnamed: 0':"img_index"}, inplace=True)
+    images_index = df["img_index"]
+
+    target_size = None
+    labels = None
+
+    all_features = []
+    all_labels = []
+
+    # celeba = .jpg and cartoon = .png
+    extension = ".jpg" if req_label in ["gender", "smiling"] else ".png"
+    
+    # training
+    # we can just use a range since files are called n.jpg
+    # for image_index in images_index:
+    for image_index in tqdm(range(0, max_data)):
+        # if image_index % 100 == 0:
+        #     print(f"Image {image_index} / nb_images")
+            
+        # generate tf / keras images
+        img_path = images_dir / (str(image_index) + extension)
+
+        img = image.img_to_array(image.load_img(img_path,
+                       target_size=target_size,
+                       interpolation='bicubic'))
+
+        # get features
+        features, _ = run_dlib_shape(img)
+        if features is not None:
+            all_features.append(features)
+            all_labels.append(genders[image_index])
+
+    landmark_features = np.array(all_features)
+
+    # for binary classification, we avoid -1 values
+    if req_label in ["gender", "smiling"]: 
+        # converts the -1 into 0, so male=0 and female=1
+        gender_labels = (np.array(all_labels) + 1)/2
+        return landmark_features, gender_labels
+
+    # convert all multiclass cartoon labels to numpy
+    return landmark_features, np.array(all_labels)
+#+end_src
+
+* Split train / test
+** imports
+
+#+begin_src jupyter-python :tangle tools/training.py
+import numpy as np
+from sklearn import svm
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier, BaggingClassifier
+from sklearn.metrics import accuracy_score
+#+end_src
+
+#+RESULTS:
+
+** split_train_test
+
+#+begin_src jupyter-python :tangle tools/training.py
+def split_train_test(X, y, proportion_train):
+    # proportion_train is a value between 0.1 and 1
+    # determines the proportion of data used for training. the remaining data is kept for testing
+    
+    # X, y = l2.extract_features_labels()
+
+    nb_data = len(X)
+    nb_train = int(proportion_train * nb_data)
+    nb_test = nb_data - nb_train
+
+    Y = np.array([y, -(y - 1)]).T
+    tr_X = X[:nb_train]
+    tr_Y = Y[:nb_train]
+    te_X = X[nb_train:]
+    te_Y = Y[nb_train:]
+
+    return tr_X, tr_Y, te_X, te_Y, nb_train, nb_test
+#+end_src
+
+** Multi Models (Train and Predict)
+
+#+begin_src jupyter-python :tangle tools/training.py
+def general_classifier(training_images, training_labels, test_images, test_labels, classifier):
+    classifier.fit(training_images, training_labels)
+
+    pred = classifier.predict(test_images)
+
+    # print(pred)
+    # print("Accuracy:", accuracy_score(test_labels, pred))
+    return accuracy_score(test_labels, pred)
+#+end_src
+
+#+begin_src jupyter-python :tangle tools/training.py
+def multi_train_test(tr_X, tr_Y, te_X, te_Y, nb_train_data, nb_test_data):
+    kernels = ["linear", "poly", "rbf", "sigmoid"]
+
+    # contains models and their score
+    classifiers = {
+        "Random Forest": RandomForestClassifier(n_estimators=100)
+    }
+
+    for k in range(1, 10):
+        classifiers[f"KNN (n={k})"] = KNeighborsClassifier(n_neighbors=k)
+
+        classifiers[f"Bagging (n={k})"] = BaggingClassifier(n_estimators=k,max_samples=0.5, max_features=4,random_state=1)
+
+    
+    for kernel in kernels:
+        classifiers[f"SVM ({kernel})"] = svm.SVC(kernel=kernel)
+
+    
+    sorted_models = sorted(classifiers.keys(), key=lambda x:x.lower())
+
+    results = []
+    for model in sorted_models:
+        clf = classifiers[model]
+
+        pred = general_classifier(tr_X.reshape((nb_train_data, 68*2)), list(zip(*tr_Y))[0], te_X.reshape((nb_test_data, 68*2)), list(zip(*te_Y))[0], clf)
+
+        results.append(pred)
+        # print(model, pred)
+
+    return sorted_models, results
+#+end_src
+
+#+RESULTS:
+
+* Show results (Score and Plot)
+
+#+begin_src jupyter-python :tangle tools/plot.py
+import matplotlib.pyplot as plt
+import numpy as np
+
+def plot_data(x, y, precision="", plot_bests_only=False, print_results=False, save=False):
+    if plot_bests_only:
+        best_bagging = np.argmax(y[0:9])
+        best_knn = np.argmax(y[9:18])
+        best_rand_forest = 18
+        best_svm = np.argmax(y[19:23])
+
+        x = [x[best_bagging], x[best_knn + 9], x[18], x[best_svm + 19]]
+
+        y = [y[best_bagging], y[best_knn + 9], y[18], y[best_svm + 19]]
+
+
+    if print_results:
+        for i in range(len(x)):
+            print(x[i], y[i])
+        
+        
+    fig, ax = plt.subplots()
+
+    plt.title(f"Percentage of Succcess of Various Models ({precision})")
+    plt.xticks(rotation='vertical')
+    plt.bar(x, y)
+    plt.gcf().subplots_adjust(bottom=0.25)
+
+    plt.show()
+
+    if save:
+        fig.savefig(f"{precision}.png")
+#+end_src
+
+#+RESULTS:
+
+* Classes
+** A1
+
+#+begin_src jupyter-python :tangle A1/Task_A1.py
+from pathlib import Path
+from dataclasses import dataclass
+
+# known labels:
+# labels = ["gender", "smiling", "face_shape", "eye_color"]
+# data_dir = ["celeba", "cartoon_set"]
+
+@dataclass
+class A1():
+    data_dir = "celeba"
+    label = "gender"
+    max_data = 5000
+    proportion_train = 0.75
+    task = "A1"
+    
+    def get_data_dir(self, debug = False):
+        name = self.data_dir
+        
+        # the file is called from repository / Ax/ or Bx/
+        cwd = Path(__file__).resolve().parents[1]
+
+        # Options: celeba, cartoon_set and *_test
+        # Each contains img/*.jpg and labels.csv
+        basedir = cwd / "Datasets"
+        # "celeba" or "cartoon_set" _test
+        images_dir = basedir / name
+
+        # print(f"Image dir: {images_dir}")
+
+        if images_dir.exists() == False:
+            print(f"Directory {images_dir.name} does not exist. Make sure your current directory is applied-ml-final-version")
+            return None
+    
+        return images_dir
+
+
+    def get_main_properties(self):
+        return self.label, self.max_data, self.get_data_dir(), self.proportion_train
+#+end_src
+
+** A2
+
+#+begin_src jupyter-python :tangle A2/Task_A2.py
+from pathlib import Path
+from dataclasses import dataclass
+
+# known labels:
+# labels = ["gender", "smiling", "face_shape", "eye_color"]
+# data_dir = ["celeba", "cartoon_set"]
+
+@dataclass
+class A2():
+    data_dir = "celeba"
+    label = "smiling"
+    max_data = 5000
+    proportion_train = 0.75
+    task = "A2"
+
+    def get_data_dir(self, debug = False):
+        name = self.data_dir
+        
+        # the file is called from repository / Ax/ or Bx/
+        cwd = Path(__file__).resolve().parents[1]
+
+        # Options: celeba, cartoon_set and *_test
+        # Each contains img/*.jpg and labels.csv
+        basedir = cwd / "Datasets"
+        # "celeba" or "cartoon_set" _test
+        images_dir = basedir / name
+
+        # print(f"Image dir: {images_dir}")
+
+        if images_dir.exists() == False:
+            print(f"Directory {images_dir.name} does not exist. Make sure your current directory is applied-ml-final-version")
+            return None
+    
+        return images_dir
+
+
+    def get_main_properties(self):
+        return self.label, self.max_data, self.get_data_dir(), self.proportion_train
+#+end_src
+
+** B1
+
+#+begin_src jupyter-python :tangle B1/Task_B1.py
+from pathlib import Path
+from dataclasses import dataclass
+
+# known labels:
+# labels = ["gender", "smiling", "face_shape", "eye_color"]
+# data_dir = ["celeba", "cartoon_set"]
+
+@dataclass
+class B1():
+    data_dir = "cartoon_set"
+    label = "face_shape"
+    max_data = 5000
+    proportion_train = 0.75
+    task = "B1"
+    
+    def get_data_dir(self, debug = False):
+        name = self.data_dir
+        
+        # the file is called from repository / Ax/ or Bx/
+        cwd = Path(__file__).resolve().parents[1]
+
+        # Options: celeba, cartoon_set and *_test
+        # Each contains img/*.jpg and labels.csv
+        basedir = cwd / "Datasets"
+        # "celeba" or "cartoon_set" _test
+        images_dir = basedir / name
+
+        # print(f"Image dir: {images_dir}")
+
+        if images_dir.exists() == False:
+            print(f"Directory {images_dir.name} does not exist. Make sure your current directory is applied-ml-final-version")
+            return None
+    
+        return images_dir
+
+
+    def get_main_properties(self):
+        return self.label, self.max_data, self.get_data_dir(), self.proportion_train
+#+end_src
+
+** B2
+
+#+begin_src jupyter-python :tangle B2/Task_B2.py
+from pathlib import Path
+from dataclasses import dataclass
+
+# known labels:
+# labels = ["gender", "smiling", "face_shape", "eye_color"]
+# data_dir = ["celeba", "cartoon_set"]
+
+@dataclass
+class B2():
+    data_dir = "cartoon_set"
+    label = "eye_color"
+    max_data = 5000
+    proportion_train = 0.75
+    task = "B2"
+    
+    def get_data_dir(self, debug = False):
+        name = self.data_dir
+        
+        # the file is called from repository / Ax/ or Bx/
+        cwd = Path(__file__).resolve().parents[1]
+
+        # Options: celeba, cartoon_set and *_test
+        # Each contains img/*.jpg and labels.csv
+        basedir = cwd / "Datasets"
+        # "celeba" or "cartoon_set" _test
+        images_dir = basedir / name
+
+        # print(f"Image dir: {images_dir}")
+
+        if images_dir.exists() == False:
+            print(f"Directory {images_dir.name} does not exist. Make sure your current directory is applied-ml-final-version")
+            return None
+    
+        return images_dir
+
+
+    def get_main_properties(self):
+        return self.label, self.max_data, self.get_data_dir(), self.proportion_train
+#+end_src
