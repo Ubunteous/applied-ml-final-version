@@ -33,3 +33,43 @@ cv2 4.7.0
 tqdm 4.64.1
 dlib 19.24.0
 #+end_src
+
+* Results
+
+Note that more than 20 variations of 4 models were used for predictions. The best of each type is given for each task.
+
+** Tasl A1
+
+| Model         | Accuracy |
+|---------------+----------|
+| Bagging (n=9) |   0.5975 |
+| KNN (n=5)     |      0.7 |
+| Random Forest |   0.8275 |
+| SVM (poly)    |    0.914 |
+
+** Task A2
+
+| Model         | Accuracy |
+|---------------+----------|
+| Bagging (n=9) |    0.824 |
+| KNN (n=7)     |    0.856 |
+| Random Forest |    0.878 |
+| SVM (poly)    |    0.894 |
+
+** Task B1
+
+| Model         | Accuracy |
+|---------------+----------|
+| Bagging (n=1) |    0.321 |
+| KNN (n=8)     |    0.487 |
+| Random Forest |    0.672 |
+| SVM (poly)    |    0.736 |
+
+** Task B2
+
+| Model         | Accuracy |
+|---------------+----------|
+| Bagging (n=9) |    0.284 |
+| KNN (n=9)     |    0.289 |
+| Random Forest |    0.342 |
+| SVM (poly)    |    0.376 |
