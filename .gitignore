@@ -1,0 +1,19 @@
+# report
+*.sty
+*.xml
+*.out
+*.log
+*.bcf
+*.bst
+*.aux
+
+# org
+.ob-jupyter/
+literate_code.org_archive
+
+# datasets
+Datasets/celeba
+Datasets/celeba_test
+Datasets/cartoon_set
+Datasets/cartoon_set_test
+

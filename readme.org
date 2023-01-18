@@ -1,0 +1,31 @@
+* Applied Machine Learning
+
+Welcome to my humble repository.
+
+** Organization of the project
+
+The purpose of this project is to deal with 4 recognition problems: Gender, Emotions, Face Shape and Eye Colour.
+
+The classes containing data specific to each task are located in A1, A2, B1 and B2.
+
+Besides that, utilities required to recognise faces, analyse them and plot results are located in tool/
+
+If you wish to run this tool, clone it and run main.py
+
+** Packages required to run your code
+
+Here are the modules used to run this project and their version at the time of its completion.
+
+#+begin_src
+Python 3.10.9
+
+numpy 1.24.1
+matplotlib 3.6.3
+pandas 1.5.2
+sklearn 1.2.0
+skimage 0.19.3
+keras 2.11.0 (and tensorflow 2.11.0)
+cv2 4.7.0
+tqdm 4.64.1
+dlib 19.24.0
+#+end_src
