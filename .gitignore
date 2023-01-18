@@ -6,6 +6,11 @@
 *.bcf
 *.bst
 *.aux
+*.bbl
+*.blg
+report/ltximg/
+report/auto/
+report/#refs.bib#
 
 # org
 .ob-jupyter/
