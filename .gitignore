@@ -17,3 +17,5 @@ Datasets/celeba_test
 Datasets/cartoon_set
 Datasets/cartoon_set_test
 
+# python
+*.pyc
